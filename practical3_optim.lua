@@ -73,10 +73,8 @@ local function load_dataset(train_or_test, count)
     data.data = data.data:index(1, shuffled_indices):squeeze()
     data.labels = data.labels:index(1, shuffled_indices):squeeze()
 
-    -- TODO: (optional) UNCOMMENT to display a training example
-    -- for more, see torch gnuplot package documentation:
-    -- https://github.com/torch/gnuplot#plotting-package-manual-with-gnuplot
-    --gnuplot.imagesc(data.data[10])
+    -- Display a training example
+    gnuplot.imagesc(data.data[10])
 
     -- vectorize each 2D data point into 1D
     data.data = data.data:reshape(data.data:size(1), 32*32)
@@ -98,6 +96,7 @@ local test = load_dataset('test', opt.test_size)
 ------------------------------------------------------------------------------
 
 local n_train_data = train.data:size(1) -- number of training data
+local n_test_data = test.data:size(1)   -- number of test data
 local n_inputs = train.data:size(2)     -- number of cols = number of dims of input
 local n_outputs = train.labels:max()    -- highest label = # of classes
 
@@ -173,6 +172,7 @@ end
 -- OPTIMIZE: FIRST HANDIN ITEM
 ------------------------------------------------------------------------
 local losses = {}          -- training losses for each iteration/minibatch
+local test_losses = {}     -- test losses for each iteration/minibatch
 local epochs = opt.epochs  -- number of full passes over all the training data
 local iterations = epochs * math.ceil(n_train_data / opt.batch_size) -- integer number of minibatches to process
 -- (note: number of training data might not be divisible by the batch size, so we round up)
@@ -207,17 +207,25 @@ for i = 1, iterations do
   -- Tensor{1,2,...,#losses}. HINT: look up the torch.linspace function, and note that torch.range(1, #losses)
   -- is the same as torch.linspace(1, #losses, #losses).
 
-  losses[#losses + 1] = minibatch_loss[1] -- append the new loss
+  losses[#losses + 1] = minibatch_loss[1] -- append the new training loss
+  
+  local batch_inputs_test = test.data
+  local batch_targets_test = test.labels
+
+  -- Compute outputs (log probabilities) for each data point
+  local batch_outputs_test = model:forward(batch_inputs_test)
+  -- Compute the loss of these outputs, measured against the true labels in batch_targets_test
+  local batch_test_loss = criterion:forward(batch_output_tests, batch_targets_test)
+  
+  local _, minibatch_test_loss = batch_test_loss
+  test_losses[#losses + 1] = minibatch_test_loss[1] -- append the new test loss
 end
 
--- TODO: for the first handin item, evaluate test loss above, and add to the plot below
---       see TIP/HINT above if you want to make the optimization loop faster
-
--- Turn table of losses into a torch Tensor, and plot it
+-- Turn table of losses into torch Tensors, and plot them:
 gnuplot.plot({
   torch.range(1, #losses),        -- x-coordinates for data to plot, creates a tensor holding {1,2,3,...,#losses}
-  torch.Tensor(losses),           -- y-coordinates (the training losses)
-  '-'})
+  torch.Tensor(losses),           -- y-coordinates (training losses)
+  torch.Tensor(test_losses)})     -- y-coordinates (test loss)
 
 ------------------------------------------------------------------------------
 -- TESTING THE LEARNED MODEL: 2ND HANDIN ITEM
