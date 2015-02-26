@@ -208,17 +208,11 @@ for i = 1, iterations do
   -- is the same as torch.linspace(1, #losses, #losses).
 
   losses[#losses + 1] = minibatch_loss[1] -- append the new training loss
-  
-  local batch_inputs_test = test.data
-  local batch_targets_test = test.labels
 
-  -- Compute outputs (log probabilities) for each data point
-  local batch_outputs_test = model:forward(batch_inputs_test)
-  -- Compute the loss of these outputs, measured against the true labels in batch_targets_test
-  local batch_test_loss = criterion:forward(batch_output_tests, batch_targets_test)
+  local test_outputs = model:forward(test.data)
+  local test_loss = criterion:forward(test_outputs, test.labels)
   
-  local _, minibatch_test_loss = batch_test_loss
-  test_losses[#losses + 1] = minibatch_test_loss[1] -- append the new test loss
+  test_losses[#losses + 1] = test_loss[1] -- append the new test loss
 end
 
 -- Turn table of losses into torch Tensors, and plot them:
@@ -234,6 +228,7 @@ gnuplot.plot({
 local logProbs = model:forward(test.data)
 local classProbabilities = torch.exp(logProbs)
 local _, classPredictions = torch.max(classProbabilities, 2)
+local classificationError = 
 -- classPredictions holds predicted classes from 1-10
 
 -- TODO: compute test classification error here for the second handin item
